@@ -12,12 +12,20 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
 
+import com.inse.concordia.defender.collector.CPUUsageCollector;
+import com.inse.concordia.defender.collector.MemoryCollector;
 import com.inse.concordia.defender.defender.DefenderDBHelper;
 import com.inse.concordia.defender.defender.DefenderTask;
-
 import com.inse.concordia.defender.collector.EventCollector;
-
+import com.inse.concordia.defender.collector.NetworkCollector;
 import com.inse.concordia.defender.collector.ProcessCollector;
+import com.inse.concordia.defender.detector.GDetector;
+import com.inse.concordia.defender.detector.IEDetector;
+import com.inse.concordia.defender.detector.ThreatDetector;
+import com.inse.concordia.defender.analyzer.GAnalyzer;
+import com.inse.concordia.defender.analyzer.IEAnalyzer;
+
+
 
 
 public class DefenderService extends Service {
@@ -60,7 +68,14 @@ public class DefenderService extends Service {
         final ArrayList<DefenderTask> idsTasks = new ArrayList<DefenderTask>();
 
         idsTasks.add(new ProcessCollector());
-
+        idsTasks.add(new MemoryCollector());
+        idsTasks.add(new CPUUsageCollector());
+        idsTasks.add(new NetworkCollector());
+        idsTasks.add(new IEAnalyzer());
+        idsTasks.add(new IEDetector());
+        idsTasks.add(new GAnalyzer());
+        idsTasks.add(new GDetector());
+        idsTasks.add(new ThreatDetector());
 
         triggerTimerTask = new TimerTask() {
             @Override
