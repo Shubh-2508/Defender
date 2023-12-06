@@ -4,11 +4,14 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 
+import android.content.ContentValues;
 import android.content.Context;
+import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
 
 import com.inse.concordia.defender.defender.DefenderDBHelper;
 import com.inse.concordia.defender.defender.DefenderTask;
+import com.inse.concordia.defender.model.Alert;
 import com.inse.concordia.defender.model.CPUUsage;
 import com.inse.concordia.defender.model.IEModel;
 import com.inse.concordia.defender.model.Process;
@@ -71,7 +74,7 @@ public class GAnalyzer extends DefenderTask {
     }
 
     // return hashmap of IEModel keyed by process name
-    public static HashMap<String, IEModel> getIEModelsForProcesses(
+    public HashMap<String, IEModel> getIEModelsForProcesses(
             DefenderDBHelper aidsDBHelper, long fromTimeMillis, long toTimeMillis) {
         // hashmap keyed by process name and then attributes
         HashMap<String, IEModel> processMap = new HashMap<String, IEModel>();
@@ -79,7 +82,6 @@ public class GAnalyzer extends DefenderTask {
         // get processes for specified period
         List<Process> processListForPeriod = aidsDBHelper.getProcesses(
                 fromTimeMillis, toTimeMillis);
-
         // i have to iterate over them all because some could have different
         // PIDs
         // so i group them under process name
@@ -95,11 +97,11 @@ public class GAnalyzer extends DefenderTask {
                     p.Pid, fromTimeMillis, toTimeMillis);
             Log.i("hash", "" + cpuUsageForProcessList.size());
             for (CPUUsage cpu : cpuUsageForProcessList) {
-                int cpuUsageInt = Integer.parseInt(cpu.CPUUsage);
+                double cpuUsageInt = Double.parseDouble(cpu.CPUUsage);
 
-                if (cpuUsageInt < 30) {
+                if (cpuUsageInt < 2) {
                     pIEModel.CPULow = pIEModel.CPULow + 1;
-                } else if (cpuUsageInt < 60) {
+                } else if (cpuUsageInt < 10) {
                     pIEModel.CPUMid = pIEModel.CPUMid + 1;
                 } else {
                     pIEModel.CPUHigh = pIEModel.CPUHigh + 1;

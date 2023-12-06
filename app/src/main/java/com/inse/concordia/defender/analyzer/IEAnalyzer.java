@@ -114,7 +114,7 @@ public class IEAnalyzer extends DefenderTask {
                     p.Pid, fromTimeMillis, toTimeMillis);
 
             for (CPUUsage cpu : cpuUsageForProcessList) {
-                int cpuUsageInt = Integer.parseInt(cpu.CPUUsage);
+                double cpuUsageInt = Double.parseDouble(cpu.CPUUsage);
 
                 if (cpuUsageInt < 30) {
                     pIEModel.CPULow = pIEModel.CPULow + 1;

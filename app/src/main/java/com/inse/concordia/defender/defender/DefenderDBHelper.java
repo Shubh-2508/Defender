@@ -12,7 +12,6 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
-
 import com.inse.concordia.defender.model.Process;
 import com.inse.concordia.defender.model.Event;
 import com.inse.concordia.defender.model.MemoryUsage;
@@ -22,7 +21,7 @@ import com.inse.concordia.defender.model.APackage;
 import com.inse.concordia.defender.model.Alert;
 import com.inse.concordia.defender.model.IEModel;
 
-public class DefenderDBHelper extends SQLiteOpenHelper {
+public final class DefenderDBHelper extends SQLiteOpenHelper {
     private final String TAG = DefenderDBHelper.class.getName();
 
     private static final int DATABASE_VERSION = 4;
@@ -53,7 +52,6 @@ public class DefenderDBHelper extends SQLiteOpenHelper {
             + CPUUSAGE_TABLE_NAME + " (" + ID + " INTEGER PRIMARY KEY,"
             + TIMESTAMP + " int," + PROCESS_PID + " TEXT, " + CPUUSAGE_CPU
             + " TEXT " + ");";
-
 
     // network usage table, collecting recvd and transd bytes timestamped per
     // uid
@@ -98,7 +96,6 @@ public class DefenderDBHelper extends SQLiteOpenHelper {
             + MEMORYUSAGE_DIFF_SHARED + " int," + MEMORYUSAGE_DIFF_PRIVATE
             + " int" + ");";
 
-
     // events table, collecting platform events such as screen on/off toggle and
     // app install plus extra metadata depending on event type
     private static final String EVENT_TABLE_NAME = "event";
@@ -130,6 +127,16 @@ public class DefenderDBHelper extends SQLiteOpenHelper {
             + " int, " + PACKAGE_NUMERIC_THREAT + " REAL, " + PROCESS_NAME
             + " TEXT, " + PROCESS_UID + " TEXT" + ");";
 
+    // comm table, collects ip and ports on ipv4 and 6 open and maps them to uid
+    private static final String COMM_TABLE_NAME = "comm";
+    private static final String COMM_LOCAL_IP_PORT = "local";
+    private static final String COMM_REMOTE_IP_PORT = "remote";
+
+    private static final String COMM_TABLE_CREATE = "CREATE TABLE "
+            + COMM_TABLE_NAME + " (" + ID + " INTEGER PRIMARY KEY," + TIMESTAMP
+            + " int," + COMM_LOCAL_IP_PORT + " TEXT, " + COMM_REMOTE_IP_PORT
+            + " TEXT, " + PROCESS_UID + " TEXT" + ");";
+
     // TODO better description
     // table for IEModel, to hold cumulative resources
     // fromts, tots, processname, lowcpu, midcpu, highcpu
@@ -159,14 +166,16 @@ public class DefenderDBHelper extends SQLiteOpenHelper {
             + TIMESTAMP + " long," + THREATALERT_NOTES + " TEXT " + ");";
 
     private static final String LOG_TABLE_NAME = "log";
-    private static final String LOG_DESC = "desc";
+    private static final String LOG_DESC = "[descending]";
 
     private static final String LOG_TABLE_CREATE = "CREATE TABLE "
             + LOG_TABLE_NAME + " (" + ID + " INTEGER PRIMARY KEY," + TIMESTAMP
-            + " long" + LOG_DESC + "TEXT " + ");";
+            + " long," + LOG_DESC + " TEXT " + ");";
+
     private static final String[] tables = new String[] { PROCESS_TABLE_NAME,
-            CPUUSAGE_TABLE_NAME, EVENT_TABLE_NAME, PACKAGE_TABLE_NAME, NETWORKUSAGE_TABLE_NAME,
-            MEMORYUSAGE_TABLE_NAME, IEMODEL_TABLE_NAME, THREATALERT_TABLE_NAME, LOG_TABLE_NAME};
+            CPUUSAGE_TABLE_NAME, NETWORKUSAGE_TABLE_NAME,
+            MEMORYUSAGE_TABLE_NAME, EVENT_TABLE_NAME, PACKAGE_TABLE_NAME,
+            IEMODEL_TABLE_NAME, THREATALERT_TABLE_NAME, LOG_TABLE_NAME, COMM_TABLE_NAME };
 
     private DefenderDBHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -183,6 +192,7 @@ public class DefenderDBHelper extends SQLiteOpenHelper {
         db.execSQL(IEMODEL_TABLE_CREATE);
         db.execSQL(THREATALERT_TABLE_CREATE);
         db.execSQL(LOG_TABLE_CREATE);
+        db.execSQL(COMM_TABLE_CREATE);
     }
 
     @Override
@@ -214,7 +224,7 @@ public class DefenderDBHelper extends SQLiteOpenHelper {
     }
 
     public boolean insertProcess(Process p) {
-        SQLiteDatabase defenderDB = this.getWritableDatabase();
+        SQLiteDatabase aidsDB = this.getWritableDatabase();
 
         long insertedID = 0;
         ContentValues values = new ContentValues();
@@ -225,11 +235,36 @@ public class DefenderDBHelper extends SQLiteOpenHelper {
         values.put(PROCESS_UID, p.Uid);
 
         try {
-            defenderDB.beginTransaction();
-            insertedID = defenderDB.insert(PROCESS_TABLE_NAME, null, values);
-            defenderDB.setTransactionSuccessful();
+            aidsDB.beginTransaction();
+            insertedID = aidsDB.insert(PROCESS_TABLE_NAME, null, values);
+            aidsDB.setTransactionSuccessful();
         } finally {
-            defenderDB.endTransaction();
+            aidsDB.endTransaction();
+        }
+
+        if (insertedID == -1) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public boolean insertCPUUsage(CPUUsage cu) {
+        SQLiteDatabase aidsDB = this.getWritableDatabase();
+
+        long insertedID = 0;
+        ContentValues values = new ContentValues();
+
+        values.put(TIMESTAMP, cu.TimeStamp);
+        values.put(PROCESS_PID, cu.Pid);
+        values.put(CPUUSAGE_CPU, cu.CPUUsage);
+
+        try {
+            aidsDB.beginTransaction();
+            insertedID = aidsDB.insert(CPUUSAGE_TABLE_NAME, null, values);
+            aidsDB.setTransactionSuccessful();
+        } finally {
+            aidsDB.endTransaction();
         }
 
         if (insertedID == -1) {
@@ -303,7 +338,6 @@ public class DefenderDBHelper extends SQLiteOpenHelper {
         return true;
     }
 
-
     public boolean insertEvent(Event ev) {
         SQLiteDatabase aidsDB = this.getWritableDatabase();
 
@@ -321,32 +355,6 @@ public class DefenderDBHelper extends SQLiteOpenHelper {
         } finally {
             aidsDB.endTransaction();
         }
-        if (insertedID == -1) {
-            return false;
-        }
-
-        return true;
-    }
-
-
-    public boolean insertCPUUsage(CPUUsage cu) {
-        SQLiteDatabase aidsDB = this.getWritableDatabase();
-
-        long insertedID = 0;
-        ContentValues values = new ContentValues();
-
-        values.put(TIMESTAMP, cu.TimeStamp);
-        values.put(PROCESS_PID, cu.Pid);
-        values.put(CPUUSAGE_CPU, cu.CPUUsage);
-
-        try {
-            aidsDB.beginTransaction();
-            insertedID = aidsDB.insert(CPUUSAGE_TABLE_NAME, null, values);
-            aidsDB.setTransactionSuccessful();
-        } finally {
-            aidsDB.endTransaction();
-        }
-
         if (insertedID == -1) {
             return false;
         }
@@ -451,9 +459,6 @@ public class DefenderDBHelper extends SQLiteOpenHelper {
 
         return true;
     }
-
-
-
 
     public List<Process> getProcesses(long fromTS, long toTS) {
         SQLiteDatabase aidsDB = this.getReadableDatabase();
@@ -800,7 +805,6 @@ public class DefenderDBHelper extends SQLiteOpenHelper {
 
         return true;
     }
-
 
     public boolean resetAllData() {
         SQLiteDatabase aidsDB = this.getWritableDatabase();
