@@ -127,7 +127,7 @@ public final class DefenderDBHelper extends SQLiteOpenHelper {
             + " int, " + PACKAGE_NUMERIC_THREAT + " REAL, " + PROCESS_NAME
             + " TEXT, " + PROCESS_UID + " TEXT" + ");";
 
-    // comm table, collects ip and ports on ipv4 and 6 open and maps them to uid
+    /*// comm table, collects ip and ports on ipv4 and 6 open and maps them to uid
     private static final String COMM_TABLE_NAME = "comm";
     private static final String COMM_LOCAL_IP_PORT = "local";
     private static final String COMM_REMOTE_IP_PORT = "remote";
@@ -135,7 +135,7 @@ public final class DefenderDBHelper extends SQLiteOpenHelper {
     private static final String COMM_TABLE_CREATE = "CREATE TABLE "
             + COMM_TABLE_NAME + " (" + ID + " INTEGER PRIMARY KEY," + TIMESTAMP
             + " int," + COMM_LOCAL_IP_PORT + " TEXT, " + COMM_REMOTE_IP_PORT
-            + " TEXT, " + PROCESS_UID + " TEXT" + ");";
+            + " TEXT, " + PROCESS_UID + " TEXT" + ");";*/
 
     // TODO better description
     // table for IEModel, to hold cumulative resources
@@ -175,7 +175,7 @@ public final class DefenderDBHelper extends SQLiteOpenHelper {
     private static final String[] tables = new String[] { PROCESS_TABLE_NAME,
             CPUUSAGE_TABLE_NAME, NETWORKUSAGE_TABLE_NAME,
             MEMORYUSAGE_TABLE_NAME, EVENT_TABLE_NAME, PACKAGE_TABLE_NAME,
-            IEMODEL_TABLE_NAME, THREATALERT_TABLE_NAME, LOG_TABLE_NAME, COMM_TABLE_NAME };
+            IEMODEL_TABLE_NAME, THREATALERT_TABLE_NAME, LOG_TABLE_NAME };
 
     private DefenderDBHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -192,7 +192,7 @@ public final class DefenderDBHelper extends SQLiteOpenHelper {
         db.execSQL(IEMODEL_TABLE_CREATE);
         db.execSQL(THREATALERT_TABLE_CREATE);
         db.execSQL(LOG_TABLE_CREATE);
-        db.execSQL(COMM_TABLE_CREATE);
+        //db.execSQL(COMM_TABLE_CREATE);
     }
 
     @Override

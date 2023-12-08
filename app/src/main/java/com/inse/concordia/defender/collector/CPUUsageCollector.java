@@ -20,72 +20,57 @@ public class CPUUsageCollector extends DefenderTask {
     Pattern pidPattern = Pattern.compile("^\\s*(\\d+)\\s*");
     Pattern cpuUsagePattern = Pattern.compile("(\\d+)%");
 
-    public CPUUsageCollector() {
+    public CPUUsageCollector(){
         this.RunEvery = 5;
     }
 
     public void doWork(Context context) {
-        DefenderDBHelper defDBHelper = DefenderDBHelper.getInstance(context);
-        //AIDSDBHelper aidsDBHelper = AIDSDBHelper.getInstance(context);
-        boolean bandera=true;
+        DefenderDBHelper aidsDBHelper = DefenderDBHelper.getInstance(context);
+
         // get cpu usage for processes
         try {
-
-            Process topProcess = Runtime.getRuntime().exec("top -n 1");
-            //Process topProcess = Runtime.getRuntime().exec("top -n 1 -d 0");
+            Process topProcess = Runtime.getRuntime().exec("top -n 1 -d 0");
 
             BufferedReader bufferedStream = new BufferedReader(
                     new InputStreamReader(topProcess.getInputStream()));
-            String tLine;
+            String tLine = null;
+
             bufferedStream.readLine(); // skip over 1st empty line
             bufferedStream.readLine(); // second empty line
             bufferedStream.readLine(); // skip over USER and SYSTEM CPU
             bufferedStream.readLine(); // skip over USER and NICE
-            //bufferedStream.readLine(); // skip over column titles
+            bufferedStream.readLine(); // skip over column titles
 
-            boolean cabe=false;
             while ((tLine = bufferedStream.readLine()) != null) {
+                Log.d("HORROR", "1.- bufferedStream.readLine()" + bufferedStream.readLine());
+                Matcher pidMatcher = pidPattern.matcher(tLine);
+                Matcher cpuMatcher = cpuUsagePattern.matcher(tLine);
 
-                if (tLine.contains("CPU")){
-                    cabe=true;
+                if (!pidMatcher.find() || !cpuMatcher.find()) {
+                    // can't find pid or cpu usage, probably line we're not
+                    // interested in
                     continue;
                 }
 
-                if (cabe){
-                    String[] lista =tLine.split(" ");
-                    List<String> lis=new ArrayList<>();
-                    for (int i=0;i<lista.length;i++){
-                        if (!lista[i].equals("") && lista[i] !=null && !lista[i].equals("R") && !lista[i].contains("[1m")){ //modifiq aca
-                            lis.add(lista[i]);
-                            Log.d("HORROR1","lista["+i+"]= "+ lista[i]);
-                        }
-                    }
-                    String cpuUsage=lis.get(8);
-                    String cpuUsa=lis.get(8);
-                    String pid = lis.get(0);
+                String pid = pidMatcher.group();
+                String cpuUsage = cpuMatcher.group();
 
-                    CPUUsage cu = new CPUUsage();
-                    cu.TimeStamp = System.currentTimeMillis();
-                    cu.Pid = pid;
-                    cu.CPUUsage = cpuUsage;
-                    Log.e("HORROR2", "esteee cu.toString() " + cu.toString());
-
-                    defDBHelper.insertCPUUsage(cu);
-                    cabe = false;
-                    //cpuUsage.replaceAll("a","");
-                    Double  valor= Double.valueOf(lis.get(8));
-                    if(valor>5.0){
-                        Log.d("HORROR3", "bandera= : "+ valor + " - "+ bandera);
-                        bandera=false;
-
-                    }
+                if (tLine.contains("root")) {
+                    continue;
                 }
-            }
 
+                // int pidInt = Integer.parseInt(pid.replaceAll("\\s", ""));
+
+                CPUUsage cu = new CPUUsage();
+                cu.TimeStamp = System.currentTimeMillis();
+                cu.Pid = pid.replaceAll("\\s", "");
+                cu.CPUUsage = cpuUsage.substring(0, cpuUsage.length() - 1)+ "10"; //cpu usage minus the % char
+
+                aidsDBHelper.insertCPUUsage(cu);
+            }
 
         } catch (IOException e) {
             // TODO Auto-generated catch block
-            //Log.d("HORROR", "ESTE ES EL CATCH");
             e.printStackTrace();
         }
     }

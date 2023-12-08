@@ -101,7 +101,7 @@ public class GAnalyzer extends DefenderTask {
 
                 if (cpuUsageInt < 2) {
                     pIEModel.CPULow = pIEModel.CPULow + 1;
-                } else if (cpuUsageInt < 10) {
+                } else if (cpuUsageInt < 11) {
                     pIEModel.CPUMid = pIEModel.CPUMid + 1;
                 } else {
                     pIEModel.CPUHigh = pIEModel.CPUHigh + 1;
